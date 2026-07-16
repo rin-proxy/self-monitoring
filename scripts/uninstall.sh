@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# <skill> — reverse install.sh. Removes the AGENTS.md managed block (and disables the
+# hook if you ship one). Does NOT delete your data in the workspace — that's yours.
+set -euo pipefail
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WS="${OPENCLAW_WORKSPACE:-$HOME/.openclaw/workspace}"
+SLUG="$(sed -n 's/^name:[[:space:]]*//p' "$SKILL_DIR/SKILL.md" | head -1 | sed 's/[[:space:]]*#.*//;s/[[:space:]]*$//')"; SLUG="${SLUG:-my-skill}"
+while [ $# -gt 0 ]; do case "$1" in
+  --workspace) WS="$2"; shift 2;;
+  -h|--help) grep -E '^#( |$)' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+  *) echo "unknown arg: $1" >&2; exit 2;; esac; done
+
+# ── (EDIT, optional) disable your hook ────────────────────────────────────────
+# command -v openclaw >/dev/null 2>&1 && openclaw hooks disable <your-hook-id> >/dev/null 2>&1 \
+#   && echo "  [ok]   hook disabled" || echo "  [skip] hook not disabled"
+
+# ── strip the AGENTS.md managed block ─────────────────────────────────────────
+AGENTS="$WS/AGENTS.md"
+BEGIN="<!-- BEGIN:$SLUG (managed — do not edit between markers) -->"
+END="<!-- END:$SLUG -->"
+if [ -f "$AGENTS" ] && grep -qF "$BEGIN" "$AGENTS"; then
+  cp "$AGENTS" "$AGENTS.bak.$(date -u +%Y%m%d%H%M%S 2>/dev/null || echo bak)"
+  awk -v b="$BEGIN" -v e="$END" '$0==b{skip=1} !skip{print} $0==e{skip=0}' "$AGENTS" > "$AGENTS.tmp" \
+    && mv "$AGENTS.tmp" "$AGENTS"
+  echo "  [ok]   AGENTS.md block removed (backup kept)"
+else
+  echo "  [skip] no AGENTS.md block found"
+fi
+echo "  [i]    your workspace data left intact."
