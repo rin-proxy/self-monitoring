@@ -1,7 +1,7 @@
 ---
 name: self-monitoring
 description: Watchdog for an OpenClaw agent that catches the silent degradation an "is it up?" check misses — gateway/process down, CPU/RAM/disk over threshold, error-rate spikes, subsystem error floods, stale logs, and failed/restart-looping units. Ships a helper that prints a dedup-friendly pass/⚠️ report so a persistent problem alerts once. Use when checking agent health, wiring an hourly watchdog, or debugging a process that's "up" but rotting.
-version: 1.0.0
+version: 1.1.0
 metadata:
   openclaw:
     emoji: "🩺"
@@ -16,7 +16,7 @@ triggers:
   - "is the agent degrading"
 author: Rin
 license: UNLICENSED
-lastUpdated: 2026-06-17
+lastUpdated: 2026-07-17
 ---
 
 # Self-Monitoring 🩺
@@ -56,6 +56,8 @@ Run it **hourly from system cron** (survives even if the agent's own scheduler i
   --quiet --state /root/.openclaw/workspace/.sm.state \
   >> /root/.openclaw/workspace/memory/self-monitoring.log 2>&1
 ```
+
+**File findings so they survive (blackboard).** A watchdog that runs on cron finds problems in a turn no human sees. When it flags a real issue, file it to the fleet inbox so the agent triages it next session instead of it evaporating: `skills/proactive-partner/scripts/inbox.sh add self-monitoring <severity> "<the issue>"` (if proactive-partner's inbox is installed). `proactive-partner` reads it on its next `inbox.sh triage`.
 
 The `--state` file holds a signature of the *sorted issue set*. On each run the helper prints exactly one routing hint:
 
