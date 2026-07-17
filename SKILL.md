@@ -49,15 +49,13 @@ Empty journal output is treated as **suspicious** (usually a missing `XDG_RUNTIM
 
 ## 🔁 The watchdog + dedup pattern
 
-Run it **hourly from system cron** (survives even if the agent's own scheduler is wedged), and pass `--state` so it alerts on the *transition*, not every tick:
+Run it **hourly from system cron** (survives even if the agent's own scheduler is wedged), and pass `--state` so it alerts on the *transition*, not every tick: When it flags a real issue, also file it to the fleet blackboard so it survives the turn — `skills/proactive-partner/scripts/inbox.sh add self-monitoring <severity> "<issue>"` (proactive-partner triages it next session).
 
 ```cron
 0 * * * * /root/.openclaw/workspace/skills/self-monitoring/scripts/monitor.sh \
   --quiet --state /root/.openclaw/workspace/.sm.state \
   >> /root/.openclaw/workspace/memory/self-monitoring.log 2>&1
 ```
-
-**File findings so they survive (blackboard).** A watchdog that runs on cron finds problems in a turn no human sees. When it flags a real issue, file it to the fleet inbox so the agent triages it next session instead of it evaporating: `skills/proactive-partner/scripts/inbox.sh add self-monitoring <severity> "<the issue>"` (if proactive-partner's inbox is installed). `proactive-partner` reads it on its next `inbox.sh triage`.
 
 The `--state` file holds a signature of the *sorted issue set*. On each run the helper prints exactly one routing hint:
 
